@@ -1,2 +1,4 @@
 # collaborative_filtering
-A very good project
+# installation
+- conda create env --name cil
+- conda install pandas
