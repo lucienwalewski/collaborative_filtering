@@ -5,9 +5,7 @@ from numba import njit
 from typing import Tuple
 
 class ALS:
-    def __init__(self, train_matrix:np.ndarray, val_matrix:np.ndarray, lmbda:float, k:int, nb_users:int, nb_items:int, n_epochs:int) -> None:
-        self.train_matrix = train_matrix
-        self.val_matrix = val_matrix
+    def __init__(self, lmbda:float, k:int, nb_users:int, nb_items:int, n_epochs:int) -> None:
         self.lmbda = lmbda
         self.k = k
         self.nb_users = nb_users
@@ -23,12 +21,23 @@ class ALS:
         return I
     
     # Calculate the RMSE
-    def rmse(self, I,R,Q,P):
+    def rmse(self, I:np.ndarray,R:np.ndarray,Q:np.ndarray,P:np.ndarray) -> float:
+        """RMSE computation
+
+        Args:
+            I (np.ndarray)
+            R (np.ndarray)
+            Q (np.ndarray)
+            P (np.ndarray)
+
+        Returns:
+            float: RMSE
+        """
         return np.sqrt(np.sum((I * (R - np.dot(P.T,Q)))**2)/len(R[R > 0]))
     
-    def train(self):
-        R = self.train_matrix.toarray()
-        T = self.val_matrix.toarray()
+    def train(self,train_matrix:np.ndarray, val_matrix:np.ndarray):
+        R = train_matrix.toarray()
+        T = val_matrix.toarray()
         I = self.index_matrix(R)
         I2 = self.index_matrix(T)
         P = 3 * np.random.rand(self.k,self.m) # Latent user feature matrix
@@ -47,7 +56,7 @@ class ALS:
 
         # time
 
-        P, Q, train_errors_fast, test_errors_fast = self.als_fast(P, Q, E, R, I, I2, self.n_epochs, self.k, self.lmbda, verbose=True)
+        P, Q, train_errors_fast, test_errors_fast = self.als_fast(P, Q, E, R, I, I2, T, self.n_epochs, self.k, self.lmbda, verbose=True)
         print("Algorithm converged")
         self.P = P
         self.Q = Q
@@ -99,7 +108,7 @@ class ALS:
             return P, Q
             
             
-    def als_fast(self, P, Q, E, R, I, I2, n_epochs, k, lmbda, verbose=False, early_stopping=False, patience=2):
+    def als_fast(self, P, Q, E, R, I, I2, T, n_epochs, k, lmbda, verbose=False, early_stopping=False, patience=2):
         train_errors_fast = []
         test_errors_fast = []
         if early_stopping:
@@ -124,6 +133,10 @@ class ALS:
                     else:
                         new_patience = patience
         return P, Q, train_errors_fast, test_errors_fast
+    
+    def save_model(self):
+        np.save("P", self.P)
+        np.save("Q", self.Q)
         
     
     def visualisation(self):

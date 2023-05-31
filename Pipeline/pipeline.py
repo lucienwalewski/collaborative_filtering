@@ -15,7 +15,9 @@ class TrainingPipeline:
         self.model = model
 
     def execute(self) -> None:
-        pass
+        train_matrix, val_matrix = self.data.get_matrices()
+        self.model.fit(train_matrix, val_matrix)
+        self.model.save_model()
     
 
     

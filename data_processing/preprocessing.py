@@ -4,6 +4,7 @@ from scipy.sparse import csr_matrix
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
+from typing import Tuple
 
 class Data:
     def __init__(self, path:str) -> None:
@@ -39,3 +40,6 @@ class Data:
         n_cols = self.train_data['MovieId'].max() + 1
         self.train_matrix = self.construct_sparse_matrix(self.train_data, n_rows, n_cols)
         self.val_matrix = self.construct_sparse_matrix(self.test_data, n_rows, n_cols)
+
+    def get_matrices(self) -> Tuple[csr_matrix, csr_matrix]:
+        return self.train_matrix, self.val_matrix
