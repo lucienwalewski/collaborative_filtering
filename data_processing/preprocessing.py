@@ -36,10 +36,13 @@ class Data:
         return csr_matrix((data['Rating'].values, (data['UserId'].values, data['MovieId'].values)), shape=(n_rows, n_cols))
     
     def get_sparse_matrix(self) -> None:
-        n_rows = self.train_data['UserId'].max() + 1
-        n_cols = self.train_data['MovieId'].max() + 1
-        self.train_matrix = self.construct_sparse_matrix(self.train_data, n_rows, n_cols)
-        self.val_matrix = self.construct_sparse_matrix(self.test_data, n_rows, n_cols)
+        self.n_rows = self.train_data['UserId'].max() + 1
+        self. n_cols = self.train_data['MovieId'].max() + 1
+        self.train_matrix = self.construct_sparse_matrix(self.train_data, self.n_rows, self.n_cols)
+        self.val_matrix = self.construct_sparse_matrix(self.test_data, self.n_rows, self.n_cols)
 
     def get_matrices(self) -> Tuple[csr_matrix, csr_matrix]:
         return self.train_matrix, self.val_matrix
+    
+    def get_shape(self) -> Tuple[int, int]:
+        return (self.n_rows, self.n_cols)

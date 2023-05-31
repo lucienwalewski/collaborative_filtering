@@ -5,11 +5,9 @@ from numba import njit
 from typing import Tuple
 
 class ALS:
-    def __init__(self, lmbda:float, k:int, nb_users:int, nb_items:int, n_epochs:int) -> None:
+    def __init__(self, lmbda:float, k:int, n_epochs:int) -> None:
         self.lmbda = lmbda
         self.k = k
-        self.nb_users = nb_users
-        self.nb_items = nb_items
         self.n_epochs = n_epochs
 
 
@@ -35,19 +33,19 @@ class ALS:
         """
         return np.sqrt(np.sum((I * (R - np.dot(P.T,Q)))**2)/len(R[R > 0]))
     
-    def train(self,train_matrix:np.ndarray, val_matrix:np.ndarray):
+    def train(self,train_matrix:np.ndarray, val_matrix:np.ndarray, n,m):
         R = train_matrix.toarray()
         T = val_matrix.toarray()
         I = self.index_matrix(R)
         I2 = self.index_matrix(T)
-        P = 3 * np.random.rand(self.k,self.m) # Latent user feature matrix
-        Q = 3 * np.random.rand(self.k,self.n) # Latent movie feature matrix
+        P = 3 * np.random.rand(self.k,m) # Latent user feature matrix
+        Q = 3 * np.random.rand(self.k,n) # Latent movie feature matrix
         Q[0,:] = R[R != 0].mean(axis=0) # Avg. rating for each movie
         E = np.eye(self.k) # (k x k)-dimensional idendity matrix
 
         # First, re-initialize P and Q
-        P = 3 * np.random.rand(self.k,self.m) # Latent user feature matrix
-        Q = 3 * np.random.rand(self.k,self.m) # Latent movie feature matrix
+        P = 3 * np.random.rand(self.k,m) # Latent user feature matrix
+        Q = 3 * np.random.rand(self.k,n) # Latent movie feature matrix
         Q[0,:] = R[R != 0].mean(axis=0) # Avg. rating for each movie
 
         # Uset different train and test errors arrays so I can plot both versions later
