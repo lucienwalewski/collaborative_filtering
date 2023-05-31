@@ -1,3 +1,3 @@
-from models.ALS import ALS
-from models.MLP import MLP
+from .ALS import ALS
+from .MLP import MLP
 

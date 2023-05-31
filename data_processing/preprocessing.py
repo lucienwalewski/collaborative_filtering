@@ -9,6 +9,8 @@ class Data:
     def __init__(self, path:str) -> None:
         self.data = pd.read_csv(path, index_col=0)
         self.preprocess()
+        self.split_train_test()
+        self.get_sparse_matrix()
 
     def preprocess(self) -> None:
         # rename column and turn ot uint8
@@ -26,5 +28,14 @@ class Data:
         # reorder columns to UserId, MovieId, Rating
         self.data = self.data[['UserId', 'MovieId', 'Rating']]
 
-    def standardize(self) -> None:
-        
+    def split_train_test(self):
+        self.train_data, self.test_data = train_test_split(self.data, test_size=0.2, random_state=42)
+
+    def construct_sparse_matrix(self, data:pd.DataFrame, n_rows:int, n_cols:int) -> csr_matrix:
+        return csr_matrix((data['Rating'].values, (data['UserId'].values, data['MovieId'].values)), shape=(n_rows, n_cols))
+    
+    def get_sparse_matrix(self) -> None:
+        n_rows = self.train_data['UserId'].max() + 1
+        n_cols = self.train_data['MovieId'].max() + 1
+        self.train_matrix = self.construct_sparse_matrix(self.train_data, n_rows, n_cols)
+        self.val_matrix = self.construct_sparse_matrix(self.test_data, n_rows, n_cols)

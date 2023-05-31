@@ -7,3 +7,4 @@ if __name__ == "__main__":
     model = ALS()
     pipeline = TrainingPipeline(data, model)
     pipeline.execute()
+    print("Done")

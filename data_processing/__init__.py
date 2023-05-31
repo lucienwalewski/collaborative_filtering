@@ -1,1 +1,1 @@
-from data_processing.preprocessing import Data
+from .preprocessing import Data

@@ -1,1 +1,1 @@
-from Pipeline.pipeline import TrainingPipeline
+from .pipeline import TrainingPipeline
