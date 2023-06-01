@@ -1,4 +1,4 @@
-from Pipeline import TrainingPipeline
+from pipeline import TrainingPipeline
 from models import ALS, MLP
 from data_processing import Data
 

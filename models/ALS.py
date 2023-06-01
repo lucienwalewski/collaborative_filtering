@@ -33,7 +33,8 @@ class ALS:
         """
         return np.sqrt(np.sum((I * (R - np.dot(P.T,Q)))**2)/len(R[R > 0]))
     
-    def train(self,train_matrix:np.ndarray, val_matrix:np.ndarray, n,m):
+    def train(self,train_matrix:np.ndarray, val_matrix:np.ndarray, n,m) -> None:
+        """Train the model"""
         R = train_matrix.toarray()
         T = val_matrix.toarray()
         I = self.index_matrix(R)
@@ -62,51 +63,87 @@ class ALS:
         self.test_errors_fast = test_errors_fast
     # Repeat until convergence
     # @njit
-    def fast_step(self, P, Q, E, R, I, n_epochs, k, lmbda, verbose=False):
-            # Fix Q and estimate P
-            for i, Ii in enumerate(I):
-                nui = np.count_nonzero(Ii) # Number of items user i has rated
-                if (nui == 0): nui = 1 # Be aware of zero counts!
-            
-                # Least squares solution
-                
-                #-------------------------------------------------------------------
-                # Get array of nonzero indices in row Ii
-                Ii_nonzero = np.nonzero(Ii)[0]
-                # Select subset of Q associated with movies reviewed by user i
-                Q_Ii = Q[:, Ii_nonzero]
-                # Select subset of row R_i associated with movies reviewed by user i
-                R_Ii = R[i, Ii_nonzero]
-                Ai = np.dot(Q_Ii, Q_Ii.T) + lmbda * nui * E
-                Vi = np.dot(Q_Ii, R_Ii.T)
-                #-------------------------------------------------------------------
-                
-                P[:, i] = np.linalg.solve(Ai, Vi)
-                
-            # Fix P and estimate Q
-            for j, Ij in enumerate(I.T):
-                nmj = np.count_nonzero(Ij) # Number of users that rated item j
-                if (nmj == 0): nmj = 1 # Be aware of zero counts!
-                
-                # Least squares solution
-                
-                #-----------------------------------------------------------------------
-                # Get array of nonzero indices in row Ij
-                Ij_nonzero = np.nonzero(Ij)[0]
-                # Select subset of P associated with users who reviewed movie j
-                P_Ij = P[:, Ij_nonzero]
-                # Select subset of column R_j associated with users who reviewed movie j
-                R_Ij = R[Ij_nonzero, j]
-                Aj = np.dot(P_Ij, P_Ij.T) + lmbda * nmj * E
-                Vj = np.dot(P_Ij, R_Ij)
-                #-----------------------------------------------------------------------
-                
-                Q[:,j] = np.linalg.solve(Aj,Vj)
+    def fast_step(self, P:np.ndarray, Q:np.ndarray, E:np.ndarray, R:np.ndarray, I:np.ndarray, n_epochs:int, k:int, lmbda:float, verbose=False) -> Tuple[np.ndarray, np.ndarray]:
+        """Alternative Least Squares : 1 Step
 
-            return P, Q
+        Args:
+            P (np.ndarray): Latent user feature matrix
+            Q (np.ndarray): Latent movie feature matrix
+            E (np.ndarray): _description_
+            R (np.ndarray): Training matrix
+            I (np.ndarray): Index matrix for training data
+            n_epochs (int)
+            k (int): latent features number
+            lmbda (float): regularization parameter
+            verbose (bool, optional): Defaults to False.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: P and Q updated
+        """
+        # Fix Q and estimate P
+        for i, Ii in enumerate(I):
+            nui = np.count_nonzero(Ii) # Number of items user i has rated
+            if (nui == 0): nui = 1 # Be aware of zero counts!
+        
+            # Least squares solution
+            
+            #-------------------------------------------------------------------
+            # Get array of nonzero indices in row Ii
+            Ii_nonzero = np.nonzero(Ii)[0]
+            # Select subset of Q associated with movies reviewed by user i
+            Q_Ii = Q[:, Ii_nonzero]
+            # Select subset of row R_i associated with movies reviewed by user i
+            R_Ii = R[i, Ii_nonzero]
+            Ai = np.dot(Q_Ii, Q_Ii.T) + lmbda * nui * E
+            Vi = np.dot(Q_Ii, R_Ii.T)
+            #-------------------------------------------------------------------
+            
+            P[:, i] = np.linalg.solve(Ai, Vi)
+            
+        # Fix P and estimate Q
+        for j, Ij in enumerate(I.T):
+            nmj = np.count_nonzero(Ij) # Number of users that rated item j
+            if (nmj == 0): nmj = 1 # Be aware of zero counts!
+            
+            # Least squares solution
+            
+            #-----------------------------------------------------------------------
+            # Get array of nonzero indices in row Ij
+            Ij_nonzero = np.nonzero(Ij)[0]
+            # Select subset of P associated with users who reviewed movie j
+            P_Ij = P[:, Ij_nonzero]
+            # Select subset of column R_j associated with users who reviewed movie j
+            R_Ij = R[Ij_nonzero, j]
+            Aj = np.dot(P_Ij, P_Ij.T) + lmbda * nmj * E
+            Vj = np.dot(P_Ij, R_Ij)
+            #-----------------------------------------------------------------------
+            
+            Q[:,j] = np.linalg.solve(Aj,Vj)
+
+        return P, Q
             
             
-    def als_fast(self, P, Q, E, R, I, I2, T, n_epochs, k, lmbda, verbose=False, early_stopping=False, patience=2):
+    def als_fast(self, P:np.ndarray, Q:np.ndarray, E:np.ndarray, R:np.ndarray, I:np.ndarray, I2:np.ndarray, T:np.ndarray, n_epochs:int, k:int, lmbda:float, verbose=False, early_stopping=False, patience=2) -> Tuple[np.ndarray, np.ndarray, list, list]:
+        """Alternative Least Squares : Fast version
+        
+        Args:
+            P (np.ndarray): Latent user feature matrix
+            Q (np.ndarray): Latent movie feature matrix
+            E (np.ndarray): _description_
+            R (np.ndarray): Training matrix
+            I (np.ndarray): Index matrix for training data
+            I2 (np.ndarray): Index matrix for test data
+            T (np.ndarray): Test matrix
+            n_epochs (int)
+            k (int): latent features number
+            lmbda (float): regularization parameter
+            verbose (bool, optional): Defaults to False.
+            early_stopping (bool, optional): Defaults to False.
+            patience (int, optional): Defaults to 2.
+            
+            Returns:
+                Tuple[np.ndarray, np.ndarray, list, list]: P and Q updated, train and test errors
+        """
         train_errors_fast = []
         test_errors_fast = []
         if early_stopping:
@@ -132,12 +169,12 @@ class ALS:
                         new_patience = patience
         return P, Q, train_errors_fast, test_errors_fast
     
-    def save_model(self):
+    def save_model(self) -> None:
         np.save("P", self.P)
         np.save("Q", self.Q)
         
     
-    def visualisation(self):
+    def visualisation(self) -> None:
         # Check performance by plotting train and test errors
         # Added curves for errors from updated algorithm to make sure the accuracy is unchanged (aside from random deviations)
         plt.plot(range(self.n_epochs), self.train_errors_fast, marker='o', label='Training Data (Updated)')
