@@ -19,6 +19,10 @@ def get_args():
         help="""set to train or split""",
         default="split")
     args_parser.add_argument(
+        '--model',
+        help="""mlp or mf or ncf""",
+        default="ncf")
+    args_parser.add_argument(
         '--epochs',
         help="""how many epochs to train for""",
         default=200,
@@ -38,7 +42,7 @@ def get_args():
     args_parser.add_argument(
         "--factor-num",
         type=int,
-        default=32,
+        default=10,
         help="predictive factors numbers in the model")
     args_parser.add_argument(
         "--num-layers",
@@ -58,7 +62,7 @@ def get_args():
     args_parser.add_argument(
         '--out-dim',
         help="""classification or regression""",
-        default=1,
+        default=5,
         type=int)
 
     return args_parser.parse_args()
@@ -90,7 +94,7 @@ if __name__ == '__main__':
     training_args = {
         "max_epochs": args.epochs,
         "callbacks": callbacks,
-        "accelerator": 'cuda' if torch.cuda.is_available() else 'mps',
+        "accelerator": 'cuda' if torch.cuda.is_available() else 'cpu',
         "devices": 1,
     }
 
