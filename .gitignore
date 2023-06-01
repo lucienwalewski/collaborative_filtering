@@ -133,3 +133,6 @@ dmypy.json
 /data
 /lightning_logs
 /related_code
+
+# als
+*.npy
