@@ -11,7 +11,7 @@ def get_args():
     args_parser.add_argument(
         '--dataset',
         help="""path to dataset""",
-        default="../data/data_train.csv")
+        default="data/data_train.csv")
     args_parser.add_argument(
         '--epochs',
         help="""how many epochs to train for""",
