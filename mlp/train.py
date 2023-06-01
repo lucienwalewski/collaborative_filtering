@@ -55,6 +55,11 @@ def get_args():
         help="""used in MLP""",
         default=0.3,
         type=float)
+    args_parser.add_argument(
+        '--out-dim',
+        help="""classification or regression""",
+        default=1,
+        type=int)
 
     return args_parser.parse_args()
 

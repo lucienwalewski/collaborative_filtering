@@ -27,8 +27,9 @@ class MLPModel(pl.LightningModule):
             mlp_modules.append(nn.ReLU())
         self.mlp_layers = nn.Sequential(*mlp_modules)
 
-        self.predict_layer = nn.Linear(self.factor_num, 5)
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.out_dim = args.out_dim  # can be 1 or 5
+        self.predict_layer = nn.Linear(self.factor_num,  self.out_dim)
+        self.loss_fn = nn.CrossEntropyLoss() if self.out_dim != 1 else nn.MSELoss()
 
         self.rmse = MeanSquaredError()
 
@@ -43,6 +44,8 @@ class MLPModel(pl.LightningModule):
         mlp_output = self.mlp_layers(mlp_input)
         logits = self.predict_layer(mlp_output)
 
+        if self.out_dim == 1:
+            rating = rating.float().view(-1, 1)
         loss = self.loss_fn(logits, rating)
 
         return loss, logits
@@ -56,9 +59,12 @@ class MLPModel(pl.LightningModule):
         loss, logits = self.forward(batch)
         user, movie, rating = batch
 
-        probs = torch.softmax(logits, dim=1)
-        # preds = torch.argmax(probs, dim=1) + 1
-        preds = torch.sum(probs * torch.arange(1, 6, device=self.device), dim=1)
+        if self.out_dim != 1:
+            probs = torch.softmax(logits, dim=1)
+            # preds = torch.argmax(probs, dim=1) + 1
+            preds = torch.sum(probs * torch.arange(1, 6, device=self.device), dim=1)
+        else:
+            preds = logits.squeeze() + 1
 
         rmse = self.rmse(preds, rating + 1)
         metrics = {
@@ -70,9 +76,12 @@ class MLPModel(pl.LightningModule):
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
         loss, logits = self.forward(batch)
-        probs = torch.softmax(logits, dim=1)
-        # preds = torch.argmax(probs, dim=1) + 1
-        preds = torch.sum(probs * torch.arange(1, 6, device=self.device), dim=1)
+        if self.out_dim != 1:
+            probs = torch.softmax(logits, dim=1)
+            # preds = torch.argmax(probs, dim=1) + 1
+            preds = torch.sum(probs * torch.arange(1, 6, device=self.device), dim=1)
+        else:
+            preds = logits.squeeze() + 1
         return preds
 
     def configure_optimizers(self):
