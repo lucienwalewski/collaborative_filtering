@@ -170,8 +170,8 @@ class ALS:
         return P, Q, train_errors_fast, test_errors_fast
     
     def save_model(self) -> None:
-        np.save("models/ALS/P", self.P)
-        np.save("models/ALS/Q", self.Q)
+        np.save("../models/ALS/P", self.P)
+        np.save("../models/ALS/Q", self.Q)
         
     
     def visualisation(self) -> None:
