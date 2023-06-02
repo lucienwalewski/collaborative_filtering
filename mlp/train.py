@@ -21,7 +21,7 @@ def get_args():
     args_parser.add_argument(
         '--model',
         help="""mlp or mf or ncf""",
-        default="mlp")
+        default="ncf")
     args_parser.add_argument(
         '--epochs',
         help="""how many epochs to train for""",
@@ -30,13 +30,17 @@ def get_args():
     args_parser.add_argument(
         '--lr',
         help='Learning rate value for the optimizers.',
-        default=1e-2,
+        default=1e-5,
         type=float)
     args_parser.add_argument(
         '--batch-size',
         help="""for train and val loader""",
         default=1024,
         type=int)
+    args_parser.add_argument(
+        '--normalize-by',
+        help="""normalize by movie or user or not""",
+        default="")
 
     # both model arguments
     args_parser.add_argument(
@@ -83,11 +87,11 @@ def get_args():
     args_parser.add_argument(
         '--mf-pretrained',
         help="""path to pretrained mf model""",
-        default="")
+        default="als_supercharged_val")
     args_parser.add_argument(
         '--mlp-pretrained',
         help="""path to pretrained mlp model""",
-        default="")
+        default="mlp_new_mse_val")
 
     return args_parser.parse_args()
 
@@ -98,16 +102,22 @@ if __name__ == '__main__':
 
     # dataset
     train_data, val_data, user_num, movie_num = load_cil(args.dataset)
-    train_dataset = MLPDataset(train_data, user_num, movie_num)
+    train_dataset = MLPDataset(train_data, user_num, movie_num, normalize_by=args.normalize_by)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=5)
 
     val_loader = None
     if val_data is not None:
-        val_dataset = MLPDataset(val_data, user_num, movie_num)
+        val_dataset = MLPDataset(val_data, user_num, movie_num,
+                                 mean=train_dataset.mean, std=train_dataset.std, normalize_by=args.normalize_by)
         val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=5)
 
+    mean = std = None
+    if args.normalize_by != "":
+        mean = torch.tensor(train_dataset.mean.values).float()
+        std = torch.tensor(train_dataset.std.values).float()
+
     # model
-    mlp_model = MLPModel(args, user_num, movie_num)
+    mlp_model = MLPModel(args, user_num, movie_num, mean, std)
 
     callbacks = [TQDMProgressBar(refresh_rate=200)]
     if val_data is not None:
@@ -118,7 +128,7 @@ if __name__ == '__main__':
     training_args = {
         "max_epochs": args.epochs,
         "callbacks": callbacks,
-        "accelerator": 'cuda' if torch.cuda.is_available() else 'mps',
+        "accelerator": 'cuda' if torch.cuda.is_available() else 'cpu',
         "devices": 1,
     }
 

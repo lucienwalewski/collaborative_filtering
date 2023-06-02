@@ -12,8 +12,10 @@ def load_cil(dataset="split"):
     data['rating'] = data['rating'].astype('uint8')
     data = data[['user', 'movie', 'rating']]
 
-    print("Subtracted {} from user, movie and rating".format(1))
-    data = data - 1  # make sure to undo for final file
+    data['user'] = data['user'] - 1
+    data['movie'] = data['movie'] - 1
+    print("Subtracted {} from user and movie".format(1))
+
     user_num = 10000  # int(data['user'].max() + 1)
     movie_num = 1000  # int(data['movie'].max() + 1)
     print("User num: {}, Movie num: {}".format(user_num, movie_num))
