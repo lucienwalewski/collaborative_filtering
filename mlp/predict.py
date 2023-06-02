@@ -12,8 +12,8 @@ from torchmetrics import MeanSquaredError
 
 if __name__ == '__main__':
 
-    version = 17947206
-    dataset = "test"
+    version = 17942413
+    dataset = "val"
 
     # dataset
     train_data, val_data, user_num, movie_num = load_cil(dataset=dataset)
