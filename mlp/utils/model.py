@@ -71,8 +71,8 @@ class MLPModel(pl.LightningModule):
             else:
                 mf_model_path = f"lightning_logs/{args.mf_pretrained}/checkpoints/"
                 checkpoints = [f for f in os.listdir(mf_model_path) if f.endswith('.ckpt')]
-                checkpoints.sort()
-                checkpoint = checkpoints[-1]
+                step_nr = [int(f.split(".")[0].split("=")[-1]) for f in checkpoints]
+                checkpoint = checkpoints[np.argmax(step_nr)]
                 print(args.mf_pretrained + checkpoint)
                 mf_model = torch.load(mf_model_path + checkpoint, map_location=self.device)
                 self.mf_user_embedding.weight.data = mf_model['state_dict']['mf_user_embedding.weight']
@@ -83,14 +83,14 @@ class MLPModel(pl.LightningModule):
         if args.mlp_pretrained != "":
             mlp_model_path = f"lightning_logs/{args.mlp_pretrained}/checkpoints/"
             checkpoints = [f for f in os.listdir(mlp_model_path) if f.endswith('.ckpt')]
-            checkpoints.sort()
-            checkpoint = checkpoints[-1]
+            step_nr = [int(f.split(".")[0].split("=")[-1]) for f in checkpoints]
+            checkpoint = checkpoints[np.argmax(step_nr)]
             print(args.mlp_pretrained + checkpoint)
             mlp_model = torch.load(mlp_model_path + checkpoint, map_location=self.device)
             self.mlp_user_embedding.weight.data = mlp_model['state_dict']['mlp_user_embedding.weight']
             self.mlp_movie_embedding.weight.data = mlp_model['state_dict']['mlp_movie_embedding.weight']
-            self.predict_layer.weight.data[:,-self.mlp_embedding_dim:] = mlp_model['state_dict']['predict_layer.weight']
-            self.predict_layer.bias.data[-self.mlp_embedding_dim:] = mlp_model['state_dict']['predict_layer.bias']
+            self.predict_layer.weight.data[:,-self.mlp_out_dim:] = mlp_model['state_dict']['predict_layer.weight']
+            self.predict_layer.bias.data[-self.mlp_out_dim:] = mlp_model['state_dict']['predict_layer.bias']
 
             for idx, layer in enumerate(self.mlp_layers):
                 if isinstance(layer, nn.Linear):

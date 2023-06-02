@@ -30,7 +30,7 @@ def get_args():
     args_parser.add_argument(
         '--lr',
         help='Learning rate value for the optimizers.',
-        default=1e-7,
+        default=1e-4,
         type=float)
     args_parser.add_argument(
         '--batch-size',
@@ -86,7 +86,7 @@ def get_args():
     args_parser.add_argument(
         '--mlp-pretrained',
         help="""path to pretrained mlp model""",
-        default="mlp_3_32_val")
+        default="")
 
     return args_parser.parse_args()
 
