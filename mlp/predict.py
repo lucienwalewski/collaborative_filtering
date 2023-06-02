@@ -12,7 +12,7 @@ from torchmetrics import MeanSquaredError
 
 if __name__ == '__main__':
 
-    version = 17830065
+    version = 17947206
     dataset = "test"
 
     # dataset
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     path = f"lightning_logs/version_{version}/checkpoints/"
     checkpoints = [f for f in os.listdir(path) if f.endswith('.ckpt')]
     checkpoints.sort()
-    checkpoint = checkpoints[0]
+    checkpoint = checkpoints[-1]
     print("Using checkpoint: ", checkpoint)
     mlp_model = MLPModel.load_from_checkpoint(path + checkpoint, map_location=torch.device('mps'))
 

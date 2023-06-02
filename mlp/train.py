@@ -19,6 +19,10 @@ def get_args():
         help="""set to train or split""",
         default="split")
     args_parser.add_argument(
+        '--model',
+        help="""mlp or mf or ncf""",
+        default="ncf")
+    args_parser.add_argument(
         '--epochs',
         help="""how many epochs to train for""",
         default=200,
@@ -26,7 +30,7 @@ def get_args():
     args_parser.add_argument(
         '--lr',
         help='Learning rate value for the optimizers.',
-        default=1e-4,
+        default=1e-3,
         type=float)
     args_parser.add_argument(
         '--batch-size',
@@ -36,10 +40,15 @@ def get_args():
 
     # model arguments
     args_parser.add_argument(
-        "--factor-num",
+        "--mlp-out-dim",
         type=int,
         default=32,
-        help="predictive factors numbers in the model")
+        help="predictive factors numbers in the mlp model")
+    args_parser.add_argument(
+        "--mf-embedding-dim",
+        type=int,
+        default=10,
+        help="predictive factors numbers in the mf model")
     args_parser.add_argument(
         "--num-layers",
         type=int,
@@ -55,6 +64,21 @@ def get_args():
         help="""used in MLP""",
         default=0.3,
         type=float)
+    args_parser.add_argument(
+        '--out-dim',
+        help="""classification or regression""",
+        default=1,
+        type=int)
+
+    # init arguments
+    args_parser.add_argument(
+        '--mf-pretrained',
+        help="""path to pretrained mf model""",
+        default="mf_10_val")
+    args_parser.add_argument(
+        '--mlp-pretrained',
+        help="""path to pretrained mlp model""",
+        default="mlp_3_32_val")
 
     return args_parser.parse_args()
 
@@ -85,7 +109,7 @@ if __name__ == '__main__':
     training_args = {
         "max_epochs": args.epochs,
         "callbacks": callbacks,
-        "accelerator": 'cuda' if torch.cuda.is_available() else 'mps',
+        "accelerator": 'cuda' if torch.cuda.is_available() else 'cpu',
         "devices": 1,
     }
 
