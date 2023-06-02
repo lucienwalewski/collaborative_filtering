@@ -24,17 +24,17 @@ class MLPModel(pl.LightningModule):
         if self.model == "mlp" or self.model == "ncf":
             self.num_layers = args.num_layers
             self.dropout = args.dropout
-            self.mlp_embedding_dim = args.mlp_embedding_dim
             self.mlp_out_dim = args.mlp_out_dim
 
+            self.mlp_embedding_dim = int(self.mlp_out_dim * (2 ** (self.num_layers - 1)))
             self.mlp_user_embedding = nn.Embedding(self.user_num, self.mlp_embedding_dim)
             self.mlp_movie_embedding = nn.Embedding(self.movie_num, self.mlp_embedding_dim)
 
             mlp_modules = []
             for i in range(self.num_layers):
-                output_size = 2 * self.mlp_embedding_dim if i < self.num_layers - 1 else self.mlp_out_dim
+                input_size = self.mlp_out_dim * (2 ** (self.num_layers - i))
                 mlp_modules.append(nn.Dropout(p=self.dropout))
-                mlp_modules.append(nn.Linear(2 * self.mlp_embedding_dim, output_size))
+                mlp_modules.append(nn.Linear(input_size, input_size // 2))
                 mlp_modules.append(nn.ReLU())
             self.mlp_layers = nn.Sequential(*mlp_modules)
 
@@ -73,6 +73,7 @@ class MLPModel(pl.LightningModule):
                 checkpoints = [f for f in os.listdir(mf_model_path) if f.endswith('.ckpt')]
                 checkpoints.sort()
                 checkpoint = checkpoints[-1]
+                print(args.mf_pretrained + checkpoint)
                 mf_model = torch.load(mf_model_path + checkpoint, map_location=self.device)
                 self.mf_user_embedding.weight.data = mf_model['state_dict']['mf_user_embedding.weight']
                 self.mf_movie_embedding.weight.data = mf_model['state_dict']['mf_movie_embedding.weight']
@@ -84,11 +85,12 @@ class MLPModel(pl.LightningModule):
             checkpoints = [f for f in os.listdir(mlp_model_path) if f.endswith('.ckpt')]
             checkpoints.sort()
             checkpoint = checkpoints[-1]
+            print(args.mlp_pretrained + checkpoint)
             mlp_model = torch.load(mlp_model_path + checkpoint, map_location=self.device)
             self.mlp_user_embedding.weight.data = mlp_model['state_dict']['mlp_user_embedding.weight']
             self.mlp_movie_embedding.weight.data = mlp_model['state_dict']['mlp_movie_embedding.weight']
-            self.predict_layer.weight.data[:,self.mf_embedding_dim:] = mlp_model['state_dict']['predict_layer.weight']
-            self.predict_layer.bias.data[self.mf_embedding_dim:] = mlp_model['state_dict']['predict_layer.bias']
+            self.predict_layer.weight.data[:,-self.mlp_embedding_dim:] = mlp_model['state_dict']['predict_layer.weight']
+            self.predict_layer.bias.data[-self.mlp_embedding_dim:] = mlp_model['state_dict']['predict_layer.bias']
 
             for idx, layer in enumerate(self.mlp_layers):
                 if isinstance(layer, nn.Linear):
