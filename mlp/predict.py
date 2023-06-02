@@ -9,11 +9,12 @@ from utils.model import MLPModel
 from utils.helper import load_cil
 
 from torchmetrics import MeanSquaredError
+import numpy as np
 
 if __name__ == '__main__':
 
-    version = "mlp_new_mse_val"
-    dataset = "val"
+    version = "ncf_als_train"
+    dataset = "test"
 
     # dataset
     train_data, val_data, user_num, movie_num = load_cil(dataset=dataset)
@@ -31,9 +32,9 @@ if __name__ == '__main__':
     # get filename of best checkpoint
     path = f"lightning_logs/{version}/checkpoints/"
     checkpoints = [f for f in os.listdir(path) if f.endswith('.ckpt')]
-    checkpoints.sort()
-    checkpoint = checkpoints[-1]
-    print("Using checkpoint: ", checkpoint)
+    step_nr = [int(f.split(".")[0].split("=")[-1]) for f in checkpoints]
+    checkpoint = checkpoints[np.argmax(step_nr)]
+    print(checkpoint)
     mlp_model = MLPModel.load_from_checkpoint(path + checkpoint, map_location=torch.device('mps'))
 
     trainer = Trainer(logger=False)

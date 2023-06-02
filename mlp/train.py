@@ -17,20 +17,20 @@ def get_args():
     args_parser.add_argument(
         '--dataset',
         help="""set to train or split""",
-        default="split")
+        default="train")
     args_parser.add_argument(
         '--model',
         help="""mlp or mf or ncf""",
-        default="mlp")
+        default="ncf")
     args_parser.add_argument(
         '--epochs',
         help="""how many epochs to train for""",
-        default=200,
+        default=6,
         type=int)
     args_parser.add_argument(
         '--lr',
         help='Learning rate value for the optimizers.',
-        default=1e-4,
+        default=1e-6,
         type=float)
     args_parser.add_argument(
         '--batch-size',
@@ -51,7 +51,7 @@ def get_args():
     args_parser.add_argument(
         '--out-dim',
         help="""classification or regression""",
-        default=5,
+        default=1,
         type=int)
 
     # mlp model arguments
@@ -82,11 +82,11 @@ def get_args():
     args_parser.add_argument(
         '--mf-pretrained',
         help="""path to pretrained mf model""",
-        default="")
+        default="als_supercharged_train")
     args_parser.add_argument(
         '--mlp-pretrained',
         help="""path to pretrained mlp model""",
-        default="")
+        default="mlp_3_32_train_upgraded")
 
     return args_parser.parse_args()
 
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     training_args = {
         "max_epochs": args.epochs,
         "callbacks": callbacks,
-        "accelerator": 'cuda' if torch.cuda.is_available() else 'mps',
+        "accelerator": 'cuda' if torch.cuda.is_available() else 'cpu',
         "devices": 1,
     }
 

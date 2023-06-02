@@ -77,8 +77,9 @@ class MLPModel(pl.LightningModule):
                 mf_model = torch.load(mf_model_path + checkpoint, map_location=self.device)
                 self.mf_user_embedding.weight.data = mf_model['state_dict']['mf_user_embedding.weight']
                 self.mf_movie_embedding.weight.data = mf_model['state_dict']['mf_movie_embedding.weight']
-                self.predict_layer.weight.data[:,:self.mf_embedding_dim] = mf_model['state_dict']['predict_layer.weight']
-                self.predict_layer.bias.data[:self.mf_embedding_dim] = mf_model['state_dict']['predict_layer.bias']
+                if mf_model["hyper_parameters"]["args"].out_dim == self.out_dim:
+                    self.predict_layer.weight.data[:,:self.mf_embedding_dim] = mf_model['state_dict']['predict_layer.weight']
+                    self.predict_layer.bias.data[:self.mf_embedding_dim] = mf_model['state_dict']['predict_layer.bias']
 
         if args.mlp_pretrained != "":
             mlp_model_path = f"lightning_logs/{args.mlp_pretrained}/checkpoints/"
@@ -89,8 +90,9 @@ class MLPModel(pl.LightningModule):
             mlp_model = torch.load(mlp_model_path + checkpoint, map_location=self.device)
             self.mlp_user_embedding.weight.data = mlp_model['state_dict']['mlp_user_embedding.weight']
             self.mlp_movie_embedding.weight.data = mlp_model['state_dict']['mlp_movie_embedding.weight']
-            self.predict_layer.weight.data[:,-self.mlp_out_dim:] = mlp_model['state_dict']['predict_layer.weight']
-            self.predict_layer.bias.data[-self.mlp_out_dim:] = mlp_model['state_dict']['predict_layer.bias']
+            if mlp_model["hyper_parameters"]["args"].out_dim == self.out_dim:
+                self.predict_layer.weight.data[:,-self.mlp_out_dim:] = mlp_model['state_dict']['predict_layer.weight']
+                self.predict_layer.bias.data[-self.mlp_out_dim:] = mlp_model['state_dict']['predict_layer.bias']
 
             for idx, layer in enumerate(self.mlp_layers):
                 if isinstance(layer, nn.Linear):
