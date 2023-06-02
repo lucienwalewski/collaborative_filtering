@@ -2,6 +2,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from torchmetrics import MeanSquaredError
+import os
 
 class MLPModel(pl.LightningModule):
     def __init__(self, args, user_num, movie_num):
@@ -19,23 +20,23 @@ class MLPModel(pl.LightningModule):
         if self.model == "mlp" or self.model == "ncf":
             self.num_layers = args.num_layers
             self.dropout = args.dropout
-            self.mlp_out_dim = args.factor_num
+            self.mlp_embedding_dim = args.mlp_embedding_dim
+            self.mlp_out_dim = args.mlp_out_dim
 
-            self.mlp_embedding_dim = int(self.mlp_out_dim * (2 ** (self.num_layers - 1)))
             self.mlp_user_embedding = nn.Embedding(self.user_num, self.mlp_embedding_dim)
             self.mlp_movie_embedding = nn.Embedding(self.movie_num, self.mlp_embedding_dim)
 
             mlp_modules = []
             for i in range(self.num_layers):
-                input_size = self.mlp_out_dim * (2 ** (self.num_layers - i))
+                output_size = 2 * self.mlp_embedding_dim if i < self.num_layers - 1 else self.mlp_out_dim
                 mlp_modules.append(nn.Dropout(p=self.dropout))
-                mlp_modules.append(nn.Linear(input_size, input_size // 2))
+                mlp_modules.append(nn.Linear(2 * self.mlp_embedding_dim, output_size))
                 mlp_modules.append(nn.ReLU())
             self.mlp_layers = nn.Sequential(*mlp_modules)
 
         # define mf part
         if self.model == "mf" or self.model == "ncf":
-            self.mf_embedding_dim = args.factor_num
+            self.mf_embedding_dim = args.mf_embedding_dim
             self.mf_user_embedding = nn.Embedding(self.user_num, self.mf_embedding_dim)
             self.mf_movie_embedding = nn.Embedding(self.movie_num, self.mf_embedding_dim)
 
@@ -53,6 +54,29 @@ class MLPModel(pl.LightningModule):
 
         # define metrics
         self.rmse = MeanSquaredError()
+
+        # init with pretrained
+        if args.mf_pretrained != "":
+            mf_model_path = f"lightning_logs/{args.mf_pretrained}/checkpoints/"
+            checkpoints = [f for f in os.listdir(mf_model_path) if f.endswith('.ckpt')]
+            checkpoints.sort()
+            checkpoint = checkpoints[-1]
+            mf_model = torch.load(mf_model_path + checkpoint, map_location=self.device)
+            self.mf_user_embedding.weight.data = mf_model['state_dict']['mf_user_embedding.weight']
+            self.mf_movie_embedding.weight.data = mf_model['state_dict']['mf_movie_embedding.weight']
+
+        if args.mlp_pretrained != "":
+            mlp_model_path = f"lightning_logs/{args.mlp_pretrained}/checkpoints/"
+            checkpoints = [f for f in os.listdir(mlp_model_path) if f.endswith('.ckpt')]
+            checkpoints.sort()
+            checkpoint = checkpoints[-1]
+            mlp_model = torch.load(mlp_model_path + checkpoint, map_location=self.device)
+            self.mlp_user_embedding.weight.data = mlp_model['state_dict']['user_embedding.weight']
+            self.mlp_movie_embedding.weight.data = mlp_model['state_dict']['movie_embedding.weight']
+            for idx, layer in enumerate(self.mlp_layers):
+                if isinstance(layer, nn.Linear):
+                    layer.weight.data = mlp_model['state_dict'][f'mlp_layers.{idx}.weight']
+                    layer.bias.data = mlp_model['state_dict'][f'mlp_layers.{idx}.bias']
 
     def forward(self, batch):
 

@@ -21,7 +21,7 @@ def get_args():
     args_parser.add_argument(
         '--model',
         help="""mlp or mf or ncf""",
-        default="ncf")
+        default="mlp")
     args_parser.add_argument(
         '--epochs',
         help="""how many epochs to train for""",
@@ -30,40 +30,64 @@ def get_args():
     args_parser.add_argument(
         '--lr',
         help='Learning rate value for the optimizers.',
-        default=1e-4,
+        default=1e-2,
         type=float)
     args_parser.add_argument(
         '--batch-size',
         help="""for train and val loader""",
-        default=512,
+        default=1024,
         type=int)
 
-    # model arguments
-    args_parser.add_argument(
-        "--factor-num",
-        type=int,
-        default=10,
-        help="predictive factors numbers in the model")
-    args_parser.add_argument(
-        "--num-layers",
-        type=int,
-        default=3,
-        help="number of layers in MLP model")
+    # both model arguments
     args_parser.add_argument(
         '--weight-decay',
         help="""used for l2 regularization""",
         default=0.1,
         type=float)
     args_parser.add_argument(
+        '--out-dim',
+        help="""classification or regression""",
+        default=1,
+        type=int)
+
+    # model arguments
+    args_parser.add_argument(
+        "--mlp-embedding-dim",
+        type=int,
+        default=128,
+        help="predictive factors numbers in the mf model")
+    args_parser.add_argument(
+        "--mlp-out-dim",
+        type=int,
+        default=10,
+        help="predictive factors numbers in the mlp model")
+    args_parser.add_argument(
+        "--num-layers",
+        type=int,
+        default=5,
+        help="number of layers in MLP model")
+    args_parser.add_argument(
         '--dropout',
         help="""used in MLP""",
         default=0.3,
         type=float)
+
+    # mf arguments
     args_parser.add_argument(
-        '--out-dim',
-        help="""classification or regression""",
-        default=5,
-        type=int)
+        "--mf-embedding-dim",
+        type=int,
+        default=10,
+        help="predictive factors numbers in the mf model")
+
+    # init arguments
+    args_parser.add_argument(
+        '--mf-pretrained',
+        help="""path to pretrained mf model""",
+        default="")
+    args_parser.add_argument(
+        '--mlp-pretrained',
+        help="""path to pretrained mlp model""",
+        default="")
 
     return args_parser.parse_args()
 
@@ -94,7 +118,7 @@ if __name__ == '__main__':
     training_args = {
         "max_epochs": args.epochs,
         "callbacks": callbacks,
-        "accelerator": 'cuda' if torch.cuda.is_available() else 'cpu',
+        "accelerator": 'cuda' if torch.cuda.is_available() else 'mps',
         "devices": 1,
     }
 
