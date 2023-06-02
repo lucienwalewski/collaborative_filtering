@@ -20,17 +20,17 @@ class MLPModel(pl.LightningModule):
         if self.model == "mlp" or self.model == "ncf":
             self.num_layers = args.num_layers
             self.dropout = args.dropout
-            self.mlp_embedding_dim = args.mlp_embedding_dim
             self.mlp_out_dim = args.mlp_out_dim
 
+            self.mlp_embedding_dim = int(self.mlp_out_dim * (2 ** (self.num_layers - 1)))
             self.mlp_user_embedding = nn.Embedding(self.user_num, self.mlp_embedding_dim)
             self.mlp_movie_embedding = nn.Embedding(self.movie_num, self.mlp_embedding_dim)
 
             mlp_modules = []
             for i in range(self.num_layers):
-                output_size = 2 * self.mlp_embedding_dim if i < self.num_layers - 1 else self.mlp_out_dim
+                input_size = self.mlp_out_dim * (2 ** (self.num_layers - i))
                 mlp_modules.append(nn.Dropout(p=self.dropout))
-                mlp_modules.append(nn.Linear(2 * self.mlp_embedding_dim, output_size))
+                mlp_modules.append(nn.Linear(input_size, input_size // 2))
                 mlp_modules.append(nn.ReLU())
             self.mlp_layers = nn.Sequential(*mlp_modules)
 
