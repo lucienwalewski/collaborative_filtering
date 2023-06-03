@@ -25,12 +25,12 @@ def get_args():
     args_parser.add_argument(
         '--epochs',
         help="""how many epochs to train for""",
-        default=6,
+        default=5,
         type=int)
     args_parser.add_argument(
         '--lr',
         help='Learning rate value for the optimizers.',
-        default=1e-6,
+        default=1e-4,
         type=float)
     args_parser.add_argument(
         '--batch-size',

@@ -80,7 +80,6 @@ class MLPModel(pl.LightningModule):
                 if mf_model["hyper_parameters"]["args"].out_dim == self.out_dim:
                     self.predict_layer.weight.data[:,:self.mf_embedding_dim] = mf_model['state_dict']['predict_layer.weight']
                     self.predict_layer.bias.data[:self.mf_embedding_dim] = mf_model['state_dict']['predict_layer.bias']
-
         if args.mlp_pretrained != "":
             mlp_model_path = f"lightning_logs/{args.mlp_pretrained}/checkpoints/"
             checkpoints = [f for f in os.listdir(mlp_model_path) if f.endswith('.ckpt')]

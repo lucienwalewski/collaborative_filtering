@@ -13,8 +13,8 @@ import numpy as np
 
 if __name__ == '__main__':
 
-    version = "ncf_als_train"
-    dataset = "test"
+    version = "version_0"
+    dataset = "val"
 
     # dataset
     train_data, val_data, user_num, movie_num = load_cil(dataset=dataset)
