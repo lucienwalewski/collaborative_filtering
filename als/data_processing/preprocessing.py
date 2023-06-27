@@ -11,6 +11,7 @@ class Data:
         self.data = pd.read_csv(path, index_col=0)
         self.preprocess()
         self.split_train_test()
+        self.analytics()
         self.get_sparse_matrix()
 
     def preprocess(self) -> None:
@@ -37,7 +38,7 @@ class Data:
     
     def get_sparse_matrix(self) -> None:
         self.n_rows = self.train_data['UserId'].max() + 1
-        self. n_cols = self.train_data['MovieId'].max() + 1
+        self.n_cols = self.train_data['MovieId'].max() + 1
         self.train_matrix = self.construct_sparse_matrix(self.train_data, self.n_rows, self.n_cols)
         self.val_matrix = self.construct_sparse_matrix(self.test_data, self.n_rows, self.n_cols)
 
@@ -46,3 +47,10 @@ class Data:
     
     def get_shape(self) -> Tuple[int, int]:
         return (self.n_rows, self.n_cols)
+    
+    def analytics(self) -> None:
+        sparsity = (self.n_cols - self.train_data['MovieId'].value_counts())/self.n_cols
+        average_per_movie = self.train_data.groupby(by="MovieId")['Rating'].mean()
+        median_per_movie = self.train_data.groupby(by="MovieId")['Rating'].median()
+        train_std = self.train_data.groupby(by="MovieId")['Rating'].std()
+        self.train_data_analysis = pd.DataFrame({'sparsity':sparsity, 'grading_avg':average_per_movie,'grading_median':median_per_movie,'grading_std':train_std})
