@@ -9,23 +9,32 @@ from utils.model import MLPModel
 from utils.helper import load_cil
 
 from torchmetrics import MeanSquaredError
+import numpy as np
 
 if __name__ == '__main__':
 
-    version = 17947206
-    dataset = "test"
+    version = "version_0"
+    dataset = "val"
 
     # dataset
     train_data, val_data, user_num, movie_num = load_cil(dataset=dataset)
-    val_dataset = MLPDataset(val_data, user_num, movie_num)
+
+    # train normalization
+    normalize_by = ""
+    mean = std = None
+    if normalize_by != "":
+        mean = train_data.groupby(by=normalize_by)['rating'].mean()
+        std = train_data.groupby(by=normalize_by)['rating'].std()
+
+    val_dataset = MLPDataset(val_data, user_num, movie_num, mean, std, normalize_by)
     val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=5)
 
     # get filename of best checkpoint
-    path = f"lightning_logs/version_{version}/checkpoints/"
+    path = f"lightning_logs/{version}/checkpoints/"
     checkpoints = [f for f in os.listdir(path) if f.endswith('.ckpt')]
-    checkpoints.sort()
-    checkpoint = checkpoints[-1]
-    print("Using checkpoint: ", checkpoint)
+    step_nr = [int(f.split(".")[0].split("=")[-1]) for f in checkpoints]
+    checkpoint = checkpoints[np.argmax(step_nr)]
+    print(checkpoint)
     mlp_model = MLPModel.load_from_checkpoint(path + checkpoint, map_location=torch.device('mps'))
 
     trainer = Trainer(logger=False)
@@ -33,12 +42,11 @@ if __name__ == '__main__':
     predictions = torch.cat(predictions, dim=0)
 
     if dataset == "val":
-        targets = torch.from_numpy(val_data['rating'].values + 1)
+        targets = torch.from_numpy(val_data['rating'].values)
         rmse = MeanSquaredError()
         mlp_rmse = rmse(predictions, targets).item()
         print(mlp_rmse)
-        print("Finished validation")
-    else:
-        val_data['Prediction'] = predictions
-        val_data['Prediction'].to_csv(f"lightning_logs/version_{version}/predictions.csv")
+
+    val_data['Prediction'] = predictions
+    val_data['Prediction'].to_csv(f"lightning_logs/{version}/predictions_{dataset}.csv")
 
