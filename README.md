@@ -43,7 +43,9 @@
 
 # Data
 
+The folder "delivery", provided with the project, should be placed in the root of the project (at the same level of the collaborative_filtering folder). It contains the data used for the project.
 ```
+
 ├── ensemble <- Predictions and features need for the ensemble model to work (of each model used in our analysis)
 
 ├── data

@@ -1,4 +1,4 @@
-name: colaborative_fil
+name: collaborative_fil
 channels:
   - apple
   - conda-forge
