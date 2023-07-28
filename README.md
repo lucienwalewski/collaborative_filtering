@@ -8,7 +8,7 @@
 
 # Structure
 ```
-├── als               <- ALS model¨
+├── als               <- ALS model
     ├── data_processing  <- Data processing scripts
     ├── models           <- Trained and serialized models, model predictions, or model summaries
     ├── pipeline        <- Pipeline scripts to Submit and Train the model
@@ -35,7 +35,7 @@
     ├── knn_baseline.ipynb <- KNN baseline model
 
 ├── environment.yaml  <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `conda env export > environment.yaml`
+                         generated with `conda env export > environment.yaml`
 
 ├── README.md          <- The top-level README for developers using this project.
 
