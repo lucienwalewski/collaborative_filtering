@@ -5,6 +5,33 @@
 
 # Usage
 - conda activate collaborative_filtering
+- Folder structure:
+    - delivery (all the data needed to run the code)
+    - collaborative_filtering
+        - data
+            - data_train.csv
+            - mySubmission.csv
+            - sampleSubmission.csv
+        - als
+            - data_processing
+            - models
+            - pipeline
+            - submission
+            - submission_task.py
+            - train_task.py
+        - mlp
+            - scripts
+            - utils
+            - train.py
+            - predict.py
+        - notebooks
+            - bayesian_fm.ipynb
+            - bayesian_fm_plus.ipynb
+            - bfm_active_learning.ipynb
+            - ensemble.ipynb
+            - knn_baseline.ipynb
+        - environment.yaml
+        - README.md
 
 # Structure of the code
 ```
@@ -43,7 +70,6 @@
 
 # Data
 
-The folder "delivery", provided with the project, should be placed in the root of the project (at the same level of the collaborative_filtering folder). It contains the data used for the project.
 ```
 
 ├── ensemble <- Predictions and features need for the ensemble model to work (of each model used in our analysis)
