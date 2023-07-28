@@ -1,4 +1,3 @@
 # collaborative_filtering
 # installation
-- conda create env --name cil
-- conda install pandas
+- conda env create -f environment.yaml
