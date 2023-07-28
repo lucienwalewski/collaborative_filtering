@@ -15,6 +15,7 @@
     ├── submission      <- Submission scripts
     ├── submission_task.py <- Submission script for the task to be launched
     ├── train_task.py  <- Training script for the task to be launched
+
 ├── data
     ├── data_train.csv <- Training data
     ├── mySubmission.csv <- Submission file
@@ -32,7 +33,9 @@
     ├── bfm_active_learning.ipynb <- Bayesian FM model with active learning
     ├── ensemble.ipynb <- Ensemble model
     ├── knn_baseline.ipynb <- KNN baseline model
+
 ├── environment.yaml  <- The requirements file for reproducing the analysis environment, e.g.
 │                         generated with `conda env export > environment.yaml`
+
 ├── README.md          <- The top-level README for developers using this project.
 
