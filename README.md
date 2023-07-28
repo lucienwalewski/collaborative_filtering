@@ -43,6 +43,7 @@
 
 # Data
 
+```
 ├── ensemble <- Predictions and features need for the ensemble model to work (of each model used in our analysis)
 
 ├── data
@@ -51,4 +52,5 @@
     ├── sampleSubmission.csv <- Sample submission file
 
 ├── ALS  <- Matrices saved in numpy format computed from the ALS model
+```
 
