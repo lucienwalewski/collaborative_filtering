@@ -6,7 +6,7 @@
 # Usage
 - conda activate collaborative_filtering
 
-# Structure
+# Structure of the code
 ```
 ├── als               <- ALS model
     ├── data_processing  <- Data processing scripts
@@ -38,4 +38,17 @@
                          generated with `conda env export > environment.yaml`
 
 ├── README.md          <- The top-level README for developers using this project.
+
+```
+
+# Data
+
+├── ensemble <- Predictions and features need for the ensemble model to work (of each model used in our analysis)
+
+├── data
+    ├── data_train.csv <- Training data
+    ├── mySubmission.csv <- Submission file
+    ├── sampleSubmission.csv <- Sample submission file
+
+├── ALS  <- Matrices saved in numpy format computed from the ALS model
 
