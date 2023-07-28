@@ -1,4 +1,4 @@
-name: cil
+name: colaborative_filtering
 channels:
   - apple
   - conda-forge
