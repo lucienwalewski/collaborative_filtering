@@ -1,4 +1,4 @@
-## collaborative_filtering
+# Project: Collaborative Filtering
 
 This repository contains the code for the collaborative filtering project of the Computational Intelligence Lab course at ETH Zurich.
 It implements different models for the task of predicting the rating of a user for a movie. The models are:
