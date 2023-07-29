@@ -1,37 +1,24 @@
 ## collaborative_filtering
 
+This repository contains the code for the collaborative filtering project of the Computational Intelligence Lab course at ETH Zurich.
+It implements different models for the task of predicting the rating of a user for a movie. The models are:
+- Alternating Least Squares (ALS)
+- K-Nearest Neighbors (KNN)
+- Multi Layer Perceptron (MLP)
+- Bayesian Factorization Machine (BFM)
+- Bayesian Factorization Machine with additional features (BFM+)
+- Bayesian Factorization Machine with active learning (BFM+AL)
+- Ensemble model
+
+The notebooks give an overview of the results obtained with each model. More specifically, the notebook `ensemble.ipynb` shows the results obtained with the ensemble model, used for the final submission. The folders `als` and `mlp` enabled us to tune these models.
+
+
 # Installation
 - conda env create -f environment.yaml
 
 # Usage
 - conda activate collaborative_filtering
-- Folder structure:
-    - delivery (all the data needed to run the code)
-    - collaborative_filtering
-        - data
-            - data_train.csv
-            - mySubmission.csv
-            - sampleSubmission.csv
-        - als
-            - data_processing
-            - models
-            - pipeline
-            - submission
-            - submission_task.py
-            - train_task.py
-        - mlp
-            - scripts
-            - utils
-            - train.py
-            - predict.py
-        - notebooks
-            - bayesian_fm.ipynb
-            - bayesian_fm_plus.ipynb
-            - bfm_active_learning.ipynb
-            - ensemble.ipynb
-            - knn_baseline.ipynb
-        - environment.yaml
-        - README.md
+- The folder containing all the data (which can be found here https://polybox.ethz.ch/index.php/s/tFQYOGEcoEQeeJb) should be placed in the root directory of the project for the notebooks to work.
 
 # Structure of the code
 ```
