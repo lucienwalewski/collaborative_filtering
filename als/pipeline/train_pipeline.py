@@ -2,26 +2,26 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 from data_processing import Data
-from models import ALS, MLP
+from models import ALS
 from typing import Self, Union
 
 
 class TrainingPipeline:
-    def __init__(self, data:Data, model: Union[ALS, MLP]) -> None:
+    def __init__(self, data:Data, model: ALS) -> None:
         """Training pipeline for models
         
         Args:
             data (Data): Data object
-            model (Union[ALS, MLP]): Model object
+            model (ALS): Model object
             
         """
         self.data = data
         self.model = model
 
-    def execute(self) -> None:
+    def execute(self, use_weights: bool=False) -> None:
         train_matrix, val_matrix = self.data.get_matrices()
         n_rows, n_cols = self.data.get_shape()
-        self.model.train(train_matrix, val_matrix, n_cols, n_rows)
+        self.model.train(train_matrix, val_matrix, n_cols, n_rows, weight_matrix=self.data.weightings if use_weights else None)
         self.model.save_model()
     
 class ValidationPipeline:

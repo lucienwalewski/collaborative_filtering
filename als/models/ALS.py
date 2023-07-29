@@ -1,187 +1,113 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
-from numba import njit
-from typing import Tuple
+from scipy.sparse import csr_matrix
+from typing import Tuple, Optional
 
 class ALS:
-    def __init__(self, lmbda:float, k:int, n_epochs:int) -> None:
+    def __init__(self, lmbda: float, k: int, n_epochs: int) -> None:
         self.lmbda = lmbda
         self.k = k
         self.n_epochs = n_epochs
 
-
-    def index_matrix(self, matrix:np.ndarray) -> np.ndarray:
-        # Index matrix for training data
-        I = matrix.copy()
-        I[I > 0] = 1
-        I[I == 0] = 0
+    def index_matrix(self, matrix: np.ndarray) -> np.ndarray:
+        """Index matrix for training/test data"""
+        I = np.zeros(matrix.shape)
+        I[matrix != 0] = 1
         return I
     
-    # Calculate the RMSE
-    def rmse(self, I:np.ndarray,R:np.ndarray,Q:np.ndarray,P:np.ndarray) -> float:
-        """RMSE computation
+    def rmse(self, I: np.ndarray, R: np.ndarray, U: np.ndarray, V: np.ndarray) -> float:
+        """RMSE computation"""
+        non_zeros = np.count_nonzero(I)
+        return np.sqrt(np.sum((I * (R - np.dot(U.T, V)))**2)/non_zeros)
 
-        Args:
-            I (np.ndarray)
-            R (np.ndarray)
-            Q (np.ndarray)
-            P (np.ndarray)
+    def als_step(self, train: np.ndarray, U: np.ndarray, V: np.ndarray, I: np.ndarray, I_T: np.ndarray, I_V: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Perform one epoch of als"""
+        # Fix V and estimate U
+        for i, I_Ti in enumerate(I_T):
+            # Edge case of zero counts
+            non_zero_i = np.count_nonzero(I_Ti) if np.count_nonzero(I_Ti) > 0 else 1
+            I_Ti_nonzero = np.nonzero(I_Ti)[0] # Non zero inidices in row i
+            V_I_Ti = V[:, I_Ti_nonzero] # Subset of V for row i
+            A = np.dot(V_I_Ti, V_I_Ti.T) + self.lmbda * non_zero_i * I
+            b = np.dot(V_I_Ti, train[i, I_Ti_nonzero].T)
+            U[:, i] = np.linalg.solve(A, b)
 
-        Returns:
-            float: RMSE
-        """
-        return np.sqrt(np.sum((I * (R - np.dot(P.T,Q)))**2)/len(R[R > 0]))
-    
-    def train(self,train_matrix:np.ndarray, val_matrix:np.ndarray, n,m) -> None:
+        # Fix U and estimate V
+        for j, I_Tj in enumerate(I_T.T):
+            # Edge case of zero counts
+            non_zero_j = np.count_nonzero(I_Tj) if np.count_nonzero(I_Tj) > 0 else 1
+            I_Tj_nonzero = np.nonzero(I_Tj)[0] # Non zero inidices in row j
+            U_I_Tj = U[:, I_Tj_nonzero] # Subset of U for row j
+            A = np.dot(U_I_Tj, U_I_Tj.T) + self.lmbda * non_zero_j * I
+            b = np.dot(U_I_Tj, train[I_Tj_nonzero, j])
+            V[:, j] = np.linalg.solve(A, b)
+        
+        return U, V
+
+    def weighted_als_step(self, train: np.ndarray, U: np.ndarray, V: np.ndarray, I: np.ndarray, W: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Perform one epoch of als given a weight matrix"""
+        # Fix V and estimate U
+        for i in range(train.shape[0]):
+            A = W[i].T * V @ V.T + self.lmbda * np.eye(self.k)
+            b = (W[i] * train[i]) @ V.T
+            U[:, i] = np.linalg.solve(A, b)
+
+        # Fix U and estimate V
+        for j in range(train.shape[1]):
+            A = U @ (W[:, j] * U).T + self.lmbda * np.eye(self.k)
+            b = U @ (W[:, j] * train[:, j])
+            V[:, j] = np.linalg.solve(A, b)
+        
+        return U, V
+
+    def train(self, train_matrix: csr_matrix, val_matrix: csr_matrix, n: int, m: int, early_stopping: bool=False, patience: int=2, weight_matrix: Optional[np.ndarray]=None) -> None:
         """Train the model"""
-        R = train_matrix.toarray()
-        T = val_matrix.toarray()
-        I = self.index_matrix(R)
-        I2 = self.index_matrix(T)
-        P = 3 * np.random.rand(self.k,m) # Latent user feature matrix
-        Q = 3 * np.random.rand(self.k,n) # Latent movie feature matrix
-        Q[0,:] = R[R != 0].mean(axis=0) # Avg. rating for each movie
-        E = np.eye(self.k) # (k x k)-dimensional idendity matrix
+        # Initialization
+        train = train_matrix.toarray()
+        val = val_matrix.toarray()
+        I_train = self.index_matrix(train)
+        I_val = self.index_matrix(val)
+        U = 3 * np.random.rand(self.k, m) # Latent user feature matrix
+        V = 3 * np.random.rand(self.k, n) # Latent movie feature matrix
+        V[0, :] = train[train != 0].mean(axis=0) # Avg. rating for each movie
+        I = np.eye(self.k) # (k x k)-dimensional idendity matrix
 
-        # First, re-initialize P and Q
-        P = 3 * np.random.rand(self.k,m) # Latent user feature matrix
-        Q = 3 * np.random.rand(self.k,n) # Latent movie feature matrix
-        Q[0,:] = R[R != 0].mean(axis=0) # Avg. rating for each movie
+        if weight_matrix is not None:
+            # Set weights to 1 if 1 in R
+            weight_matrix[train > 0] = 1
 
-        # Uset different train and test errors arrays so I can plot both versions later
-        train_errors_fast = []
-        test_errors_fast = []
+        # For plotting
+        train_errors = []
+        val_errors = []
 
-        # time
-
-        P, Q, train_errors_fast, test_errors_fast = self.als_fast(P, Q, E, R, I, I2, T, self.n_epochs, self.k, self.lmbda, verbose=True)
-        print("Algorithm converged")
-        self.P = P
-        self.Q = Q
-        self.train_errors_fast = train_errors_fast
-        self.test_errors_fast = test_errors_fast
-    # Repeat until convergence
-    # @njit
-    def fast_step(self, P:np.ndarray, Q:np.ndarray, E:np.ndarray, R:np.ndarray, I:np.ndarray, n_epochs:int, k:int, lmbda:float, verbose=False) -> Tuple[np.ndarray, np.ndarray]:
-        """Alternative Least Squares : 1 Step
-
-        Args:
-            P (np.ndarray): Latent user feature matrix
-            Q (np.ndarray): Latent movie feature matrix
-            E (np.ndarray): _description_
-            R (np.ndarray): Training matrix
-            I (np.ndarray): Index matrix for training data
-            n_epochs (int)
-            k (int): latent features number
-            lmbda (float): regularization parameter
-            verbose (bool, optional): Defaults to False.
-
-        Returns:
-            Tuple[np.ndarray, np.ndarray]: P and Q updated
-        """
-        # Fix Q and estimate P
-        for i, Ii in enumerate(I):
-            nui = np.count_nonzero(Ii) # Number of items user i has rated
-            if (nui == 0): nui = 1 # Be aware of zero counts!
-        
-            # Least squares solution
-            
-            #-------------------------------------------------------------------
-            # Get array of nonzero indices in row Ii
-            Ii_nonzero = np.nonzero(Ii)[0]
-            # Select subset of Q associated with movies reviewed by user i
-            Q_Ii = Q[:, Ii_nonzero]
-            # Select subset of row R_i associated with movies reviewed by user i
-            R_Ii = R[i, Ii_nonzero]
-            Ai = np.dot(Q_Ii, Q_Ii.T) + lmbda * nui * E
-            Vi = np.dot(Q_Ii, R_Ii.T)
-            #-------------------------------------------------------------------
-            
-            P[:, i] = np.linalg.solve(Ai, Vi)
-            
-        # Fix P and estimate Q
-        for j, Ij in enumerate(I.T):
-            nmj = np.count_nonzero(Ij) # Number of users that rated item j
-            if (nmj == 0): nmj = 1 # Be aware of zero counts!
-            
-            # Least squares solution
-            
-            #-----------------------------------------------------------------------
-            # Get array of nonzero indices in row Ij
-            Ij_nonzero = np.nonzero(Ij)[0]
-            # Select subset of P associated with users who reviewed movie j
-            P_Ij = P[:, Ij_nonzero]
-            # Select subset of column R_j associated with users who reviewed movie j
-            R_Ij = R[Ij_nonzero, j]
-            Aj = np.dot(P_Ij, P_Ij.T) + lmbda * nmj * E
-            Vj = np.dot(P_Ij, R_Ij)
-            #-----------------------------------------------------------------------
-            
-            Q[:,j] = np.linalg.solve(Aj,Vj)
-
-        return P, Q
-            
-            
-    def als_fast(self, P:np.ndarray, Q:np.ndarray, E:np.ndarray, R:np.ndarray, I:np.ndarray, I2:np.ndarray, T:np.ndarray, n_epochs:int, k:int, lmbda:float, verbose=False, early_stopping=False, patience=2) -> Tuple[np.ndarray, np.ndarray, list, list]:
-        """Alternative Least Squares : Fast version
-        
-        Args:
-            P (np.ndarray): Latent user feature matrix
-            Q (np.ndarray): Latent movie feature matrix
-            E (np.ndarray): _description_
-            R (np.ndarray): Training matrix
-            I (np.ndarray): Index matrix for training data
-            I2 (np.ndarray): Index matrix for test data
-            T (np.ndarray): Test matrix
-            n_epochs (int)
-            k (int): latent features number
-            lmbda (float): regularization parameter
-            verbose (bool, optional): Defaults to False.
-            early_stopping (bool, optional): Defaults to False.
-            patience (int, optional): Defaults to 2.
-            
-            Returns:
-                Tuple[np.ndarray, np.ndarray, list, list]: P and Q updated, train and test errors
-        """
-        train_errors_fast = []
-        test_errors_fast = []
         if early_stopping:
             new_patience = patience
-        # Repeat until convergence
-        for epoch in range(n_epochs):
-            P, Q = self.fast_step(P, Q, E, R, I, n_epochs, k, lmbda, verbose=False)
-            train_rmse = self.rmse(I,R,Q,P)
-            test_rmse = self.rmse(I2,T,Q,P)
-            train_errors_fast.append(train_rmse)
-            test_errors_fast.append(test_rmse)
-            if verbose:
-                print("[Epoch %d/%d] train error: %f, test error: %f" \
-            %(epoch+1, n_epochs, train_rmse, test_rmse))
+        for epoch in range(self.n_epochs):
+            if weight_matrix is not None:
+                U, V = self.weighted_als_step(train, U, V, I, weight_matrix)
+            else:
+                U, V = self.als_step(train, U, V, I, I_train, I_val)
+            train_rmse = self.rmse(I_train, train, U, V)
+            test_rmse = self.rmse(I_val, val, U, V)
+            train_errors.append(train_rmse)
+            val_errors.append(test_rmse)
             if early_stopping:
-                if epoch > 1:
-                    if test_errors_fast[-1] >= test_errors_fast[-2]:
-                        new_patience -= 1
-                        if new_patience == 0:
-                            print("Early stopping at epoch %d" % epoch)
-                            break
-                    else:
-                        new_patience = patience
-        return P, Q, train_errors_fast, test_errors_fast
-    
-    def save_model(self) -> None:
-        np.save("../models/ALS/P", self.P)
-        np.save("../models/ALS/Q", self.Q)
-        
-    
-    def visualisation(self) -> None:
-        # Check performance by plotting train and test errors
-        # Added curves for errors from updated algorithm to make sure the accuracy is unchanged (aside from random deviations)
-        plt.plot(range(self.n_epochs), self.train_errors_fast, marker='o', label='Training Data (Updated)')
-        plt.plot(range(self.n_epochs), self.test_errors_fast, marker='v', label='Test Data (Updated)')
-        plt.title('ALS-WR Learning Curve')
-        plt.xlabel('Number of Epochs')
-        plt.ylabel('RMSE')
-        plt.legend()
-        plt.grid()
-        plt.show()
+                if test_rmse < min(val_errors):
+                    new_patience = patience
+                else:
+                    new_patience -= 1
+                    if new_patience == 0:
+                        break
+            print(f'[{epoch+1}/{self.n_epochs}] Train RMSE: {train_rmse:.4f}, Test RMSE: {test_rmse:.4f}')
+
+        print("Algorithm converged")
+        self.U = U
+        self.V = V
+        self.train_errors = train_errors
+        self.val_errors = val_errors
+
+    def save_model(self, path: str="models/ALS_weights/") -> None:
+        """Save model to path"""
+        np.save(f"{path}U.npy", self.U.T)
+        np.save(f"{path}V.npy", self.V.T)
