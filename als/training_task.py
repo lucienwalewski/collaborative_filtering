@@ -27,15 +27,25 @@ def get_args():
         help="""Number of latent factors""",
         default=10,
         type=int)
+    args_parser.add_argument(
+        '--bls_data',
+        help="""path to bls dataset""",
+        default="../data/prior/bfm/")
+    args_parser.add_argument(
+        '--use_weightings',
+        help="""Whether to use weightings or not""",
+        default=False,
+        type=bool)
+
     
     return args_parser.parse_args()
 
 if __name__ == "__main__":
     args = get_args()
-    data = Data(args.dataset)
+    data = Data(train_path=args.dataset, prior_path=args.bls_data)
     model = ALS(lmbda=args.lmbda, k=args.k, n_epochs=args.epochs)
     pipeline = TrainingPipeline(data, model)
-    pipeline.execute()
+    pipeline.execute(use_weights=args.use_weightings)
     print("Model trained and saved")
 
     

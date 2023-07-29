@@ -18,10 +18,10 @@ class TrainingPipeline:
         self.data = data
         self.model = model
 
-    def execute(self) -> None:
+    def execute(self, use_weights: bool=False) -> None:
         train_matrix, val_matrix = self.data.get_matrices()
         n_rows, n_cols = self.data.get_shape()
-        self.model.train(train_matrix, val_matrix, n_cols, n_rows)
+        self.model.train(train_matrix, val_matrix, n_cols, n_rows, weight_matrix=self.data.weightings if use_weights else None)
         self.model.save_model()
     
 class ValidationPipeline:
