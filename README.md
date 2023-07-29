@@ -7,7 +7,6 @@ It implements different models for the task of predicting the rating of a user f
 - Multi Layer Perceptron (MLP)
 - Bayesian Factorization Machine (BFM)
 - Bayesian Factorization Machine with additional features (BFM+)
-- Bayesian Factorization Machine with active learning (BFM+AL)
 - Ensemble model
 
 The notebooks give an overview of the results obtained with each model. More specifically, the notebook `ensemble.ipynb` shows the results obtained with the ensemble model, used for the final submission. The folders `als` and `mlp` enabled us to tune these models.
