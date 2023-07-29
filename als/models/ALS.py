@@ -33,6 +33,9 @@ class ALS:
             b = np.dot(V_I_Ti, train[i, I_Ti_nonzero].T)
             U[:, i] = np.linalg.solve(A, b)
 
+        # CITATION: The use of np.linalg.solve was inspired by the following blog post:
+        # https://github.com/benlindsay/als-wr-tutorial/blob/master/modified_notebook.ipynb
+
         # Fix U and estimate V
         for j, I_Tj in enumerate(I_T.T):
             # Edge case of zero counts
